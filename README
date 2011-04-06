@@ -1,0 +1,101 @@
+UpdatesTimestampOf
+======================
+
+This ActiveRecord extension allows you to easily cascade the 'updated_at' /
+'updated_on' timestamps updates to other models.  Useful when you want to update
+the timestamps of linked model records whenever the current record is saved or
+destroyed.
+
+To use this extension/plugin, unpack it in vendor/plugins/.  Then include the
+following line in your ActiveRecord model:
+
+  updates_timestamp_of :linked_model
+
+This links the updating of the current record's updated_at timestamp to
+'linked_model'.  Note that the model must have the 'belongs_to' relationship to
+the 'linked_model'.
+
+The plugin also adds the following methods to your model when activated:
+
+ * save_without_updating_linked_timestamps!
+   Calls 'save!' without updating the timestamps of linked models.
+
+ * destroy_without_updating_linked_timestamps
+   Calls 'destroy' without updating the timestamps of linked models.
+
+ * update_timestamps
+   Updates the timestamps of linked models.
+
+ * skip_updating_of_linked_timestamps
+   All commands wrapped within this block will not trigger updates to the
+   linked models.
+   
+Please refer to the following sections for usage examples.
+
+
+Basic Usage 
+============
+
+Consider the following ActiveRecord models:
+
+  class Car < ActiveRecord::Base
+    has_many :wheels
+  end
+
+  class Wheel < ActiveRecord::Base
+    belongs_to :car
+    updates_timestamp_of :car         # <-- this is magical line
+  end
+
+Now whenever a wheel record is created or saved, the updated_at timestamp for
+the linked model 'wheel' will be updated as well.  Note that the "belongs_to
+:car" relationship must be present.  You can also specify multiple models to
+update, i.e.:
+
+    updates_timestamp_of :car, :inventory
+
+
+Methods Usage 
+==============
+
+Consider the following code snippet, based on the class definitions of the
+previous section:
+
+  my_car = Car.new
+  my_car.save!
+
+  sleep 10   # sleep for 10 seconds to make timestamp differences more apparent
+
+  my_wheel = Wheel.new
+  my_wheel.car = my_car
+  my_wheel.save!
+
+Now the updated_at fields for both my_car and my_wheel are the same.  If we
+replaced the last line with this instead:
+
+  my_wheel.save_without_updating_linked_timestamps!
+
+Then the updated_at field for my_wheel would not be updated.  You can achieve
+the same effect with:
+
+  my_wheel.skip_updating_of_linked_timestamps do 
+    my_wheel.save!
+  end
+
+This serves as a generic way of temporarily stopping the timestamp update
+propagation. 
+
+Do this to just update the timestamps of the linked models:
+
+  my_wheel.update_timestamps
+
+
+Detailed Examples
+==================
+
+Please refer to the plugin tests for detailed usage examples and the expected
+results.
+
+
+Copyright (c) 2008 James Tan, released under the MIT license
+
